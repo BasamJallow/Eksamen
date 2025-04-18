@@ -201,64 +201,29 @@
                     <h2>Top 5 værdipapirer baseret på værdi</h2>
                     <button class="see-all-button">Se All</button>
                 </div>
-                <table class="stocks-table">
+                <table>
                     <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Portfolio</th>
-                            <th>24h Change</th>
-                            <th>Value</th>
-                        </tr>
+                      <tr>
+                        <th>Stock</th>
+                        <th>Symbol</th>
+                        <th>Quantity</th>
+                        <th>Purchase Price</th>
+                        <th>Current Price</th>
+                      </tr>
                     </thead>
                     <tbody>
-                        <% marketStocks.forEach(stock => { %>
-                            <tr>
-                                <td>
-                                    <div class="stock-name"><%= stock.name %></div>
-                                    <div class="stock-symbol"><%= stock.symbol %></div>
-                                </td>
-                                <td><%= stock.portfolio %></td>
-                                <td class="<%= stock.change >= 0 ? 'change-positive' : 'change-negative' %>">
-                                    <%= stock.change >= 0 ? '+' : '' %><%= stock.change %>%
-                                </td>
-                                <td><%= stock.value %> DKK</td>
-                            </tr>
-                        <% }); %>
-                    </tbody>
-                </table>
-            </div>
-
-            <!-- Profit based stocks -->
-            <div class="stocks-table-container">
-                <div class="section-header">
-                    <h2>Top 5 værdipapirer baseret på profit</h2>
-                    <button class="see-all-button">Se All</button>
-                </div>
-                <table class="stocks-table">
-                    <thead>
+                      <% portfolioStocks.forEach(stock => { %>
                         <tr>
-                            <th>Name</th>
-                            <th>Portfolio</th>
-                            <th>24h Change</th>
-                            <th>Value</th>
+                          <td><%= stock.name %></td>
+                          <td><%= stock.stock_symbol %></td>
+                          <td><%= stock.quantity %></td>
+                          <td><%= stock.purchase_price %></td>
+                          <td><%= stock.currentPrice !== null ? stock.currentPrice : 'N/A' %></td>
                         </tr>
-                    </thead>
-                    <tbody>
-                        <% marketStocks.forEach(stock => { %>
-                            <tr>
-                                <td>
-                                    <div class="stock-name"><%= stock.name %></div>
-                                    <div class="stock-symbol"><%= stock.symbol %></div>
-                                </td>
-                                <td><%= stock.portfolio %></td>
-                                <td class="<%= stock.change >= 0 ? 'change-positive' : 'change-negative' %>">
-                                    <%= stock.change >= 0 ? '+' : '' %><%= stock.change %>%
-                                </td>
-                                <td><%= stock.value %> DKK</td>
-                            </tr>
-                        <% }); %>
+                      <% }); %>
                     </tbody>
-                </table>
+                  </table>
+                  
             </div>
         </div>
     </div>

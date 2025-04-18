@@ -1,75 +1,56 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../database');
+const axios = require('axios'); // Import af axios for API requests
 
-// Simpel funktion til at hente aktiekurser (simuleret data)
-function getStockPrices() {
-    // Hårdkodede test-data (i virkeligheden ville dette komme fra en API)
-    return [
-        { navn: "Apple", symbol: "AAPL", kurs: 180.25 },
-        { navn: "Microsoft", symbol: "MSFT", kurs: 325.50 },
-        { navn: "Tesla", symbol: "TSLA", kurs: 245.75 }
-    ];
+
+
+async function fetchStockPrices(symbols) {
+  const apiKey = 'YOUR_API_KEY';
+  const symbolList = symbols.join(',');
+  const url = `ht
+
+  try {
+    const response = await axios.get(url);
+    return response.data; // Array of stock price objects
+  } catch (error) {
+    console.error('Error fetching stock prices:', error);
+    return [];
+  }
 }
+router.get('/portfolio', async (req, res) => {
+    try {
+      // Fetch portfolios and associated stocks from your database
+      const portfolios = await getPortfoliosFromDB(); // Implement this function
+      const portfolioStocks = await getPortfolioStocksFromDB(); // Implement this function
+  
+      // Extract unique stock symbols
+      const symbols = [...new Set(portfolioStocks.map(stock => stock.stock_symbol))];
+  
+      // Fetch real-time stock prices
+      const stockPrices = await fetchStockPrices(symbols);
+  
+      // Map stock prices to portfolio stocks
+      const updatedPortfolioStocks = portfolioStocks.map(stock => {
+        const priceData = stockPrices.find(price => price.symbol === stock.stock_symbol);
+        return {
+          ...stock,
+          currentPrice: priceData ? priceData.price : null,
+        };
+      });
+  
+      res.render('portfolio', {
+        portfolios,
+        portfolioStocks: updatedPortfolioStocks,
+        error: null,
+      });
+    } catch (error) {
+      console.error('Error rendering portfolio:', error);
+      res.status(500).send('Server Error');
+    }
+  });
+  
 
-// === PORTFOLIO VISNING ===
-router.get('/portfolio', (req, res) => {
-    res.render('portfolio');  // sørg for portfolio.ejs eksisterer
-    // Hent alle porteføljer
-    db.all('SELECT * FROM portfolios', [], (err, portfolios) => {
-        if (err) {
-            console.error('Database fejl:', err);
-            return res.status(500).send('Database fejl');
-        }
-
-        // Hent aktier for hver portefølje
-        db.all('SELECT * FROM portfolio_stocks', [], (err, stocks) => {
-            if (err) {
-                console.error('Database fejl:', err);
-                return res.status(500).send('Database fejl');
-            }
-
-            // Demo aktiekurser
-            const marketStocks = [
-                {
-                    name: "Apple Inc.",
-                    symbol: "AAPL",
-                    portfolio: "Growth Tech",
-                    change: 1.27,
-                    value: 35201
-                },
-                {
-                    name: "Microsoft Corporation",
-                    symbol: "MSFT",
-                    portfolio: "Growth Tech",
-                    change: -1.21,
-                    value: 11000
-                },
-                {
-                    name: "Alphabet Inc.",
-                    symbol: "GOOGL",
-                    portfolio: "Tech Leaders",
-                    change: -2.13,
-                    value: 7584
-                },
-                {
-                    name: "Meta Platforms Inc.",
-                    symbol: "META",
-                    portfolio: "Growth Tech",
-                    change: 0.32,
-                    value: 6500
-                }
-            ];
-
-            res.render('portfolio', {
-                portfolios: portfolios || [],
-                portfolioStocks: stocks || [],
-                marketStocks: marketStocks,
-                error: null
-            });
-        });
-    });
-});
 
 // Opret ny portefølje
 router.post('/portfolio/create', (req, res) => {
