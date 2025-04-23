@@ -1,63 +1,84 @@
-const sqlite3 = require('sqlite3').verbose();
+const sql = require('mssql');
 const bcrypt = require('bcryptjs');
-const db = new sqlite3.Database('./database.db');
 
-// Opret users tabel hvis den ikke eksisterer
-db.run(`
-  CREATE TABLE IF NOT EXISTS users (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    username TEXT UNIQUE NOT NULL,
-    email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+// Azure SQL-konfiguration
+const config = {
+    user: 'your-username',
+    password: 'your-password',
+    server: 'your-server.database.windows.net',
+    database: 'your-database-name',
+    options: {
+        encrypt: true, // Kræves af Azure
+        enableArithAbort: true
+    }
+};
 
 class User {
-  static async create(username, email, password) {
-    try {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      return new Promise((resolve, reject) => {
-        db.run(
-          'INSERT INTO users (username, email, password) VALUES (?, ?, ?)',
-          [username, email, hashedPassword],
-          function(err) {
-            if (err) reject(err);
-            resolve(this.lastID);
-          }
-        );
-      });
-    } catch (error) {
-      throw error;
-    }
-  }
-
-  static async findByUsername(username) {
-    return new Promise((resolve, reject) => {
-      db.get('SELECT * FROM users WHERE username = ?', [username], (err, user) => {
-        if (err) reject(err);
-        resolve(user);
-      });
-    });
-  }
-
-  static async verifyPassword(password, hashedPassword) {
-    return bcrypt.compare(password, hashedPassword);
-  }
-
-  static async updatePassword(userId, newPassword) {
-    const hashedPassword = await bcrypt.hash(newPassword, 10);
-    return new Promise((resolve, reject) => {
-      db.run(
-        'UPDATE users SET password = ? WHERE id = ?',
-        [hashedPassword, userId],
-        (err) => {
-          if (err) reject(err);
-          resolve(true);
+    // Opret en ny bruger
+    static async create(username, email, password) {
+        try {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            const pool = await sql.connect(config);
+            const result = await pool.request()
+                .input('username', sql.NVarChar, username)
+                .input('email', sql.NVarChar, email)
+                .input('password', sql.NVarChar, hashedPassword)
+                .query(`
+                    INSERT INTO users (username, email, password)
+                    VALUES (@username, @email, @password);
+                    SELECT SCOPE_IDENTITY() AS id;
+                `);
+            return result.recordset[0].id;
+        } catch (err) {
+            throw new Error('Fejl ved oprettelse af bruger: ' + err.message);
         }
-      );
-    });
-  }
+    }
+
+    // Find en bruger baseret på brugernavn
+    static async findByUsername(username) {
+        try {
+            const pool = await sql.connect(config);
+            const result = await pool.request()
+                .input('username', sql.NVarChar, username)
+                .query('SELECT * FROM users WHERE username = @username');
+            return result.recordset[0];
+        } catch (err) {
+            throw new Error('Fejl ved hentning af bruger: ' + err.message);
+        }
+    }
+
+    // Find en bruger baseret på ID
+    static async findById(userId) {
+        try {
+            const pool = await sql.connect(config);
+            const result = await pool.request()
+                .input('id', sql.Int, userId)
+                .query('SELECT * FROM users WHERE id = @id');
+            return result.recordset[0];
+        } catch (err) {
+            throw new Error('Fejl ved hentning af bruger: ' + err.message);
+        }
+    }
+
+    // Verificer adgangskode
+    static async verifyPassword(password, hashedPassword) {
+        return bcrypt.compare(password, hashedPassword);
+    }
+
+    // Opdater adgangskode
+    static async updatePassword(userId, newPassword) {
+        try {
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+            const pool = await sql.connect(config);
+            await pool.request()
+                .input('id', sql.Int, userId)
+                .input('password', sql.NVarChar, hashedPassword)
+                .query('UPDATE users SET password = @password WHERE id = @id');
+            return true;
+        } catch (err) {
+            throw new Error('Fejl ved opdatering af adgangskode: ' + err.message);
+        }
+    }
 }
 
-module.exports = User; 
+module.exports = User;
