@@ -1,12 +1,15 @@
 const sql = require('mssql');
 const bcrypt = require('bcryptjs');
+const dotenv = require('dotenv');
+
+dotenv.config(); // Indlæs miljøvariabler fra .env-filen
 
 // Azure SQL-konfiguration
 const config = {
-    user: 'your-username',
-    password: 'your-password',
-    server: 'your-server.database.windows.net',
-    database: 'your-database-name',
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD,
+    server: process.env.DB_SERVER,
+    database: process.env.DB_DATABASE, // Fjernet mellemrum
     options: {
         encrypt: true, // Kræves af Azure
         enableArithAbort: true
@@ -80,5 +83,6 @@ class User {
         }
     }
 }
+
 
 module.exports = User;

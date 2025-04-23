@@ -110,4 +110,5 @@ document.getElementById('changePassword').addEventListener('submit', async (e) =
     } catch (error) {
         showMessage('changePassword', 'Der skete en fejl ved ændring af adgangskode', true);
     }
-}); 
+});
+    
